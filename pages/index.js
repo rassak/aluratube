@@ -3,10 +3,36 @@ import config from "../config.json";
 import styled from "styled-components";
 import Menu from "../source/components/Menu/"
 import { StyledTimeline } from "../source/components/Timeline";
+import { createClient } from "@supabase/supabase-js";
+import { videoService } from "../source/services/videoService";
+
+
 
 function HomePage() {
 
+    const service = videoService();
     const [valorDoFiltro, setValorDoFiltro] = React.useState("");
+    const [playlists, setPlaylists] = React.useState({}); // config.playlists
+
+    //efeito colateral - loop infinito da requisição
+    React.useEffect(() => {
+        console.log("useEffect");
+        service.getAllVideos()
+            .then((dados) => {
+                console.log(dados.data);
+                // Forma imutavel
+                const novasPlaylists = {...playlists};
+                dados.data.forEach((video) => {
+                    if(!novasPlaylists[video.playlist]) {
+                        novasPlaylists[video.playlist] = [];
+                    }
+                    novasPlaylists[video.playlist].push(video);
+                });
+                setPlaylists(novasPlaylists); // sempre preciso de uma nova referencia, senao tomo warning do react
+            });
+    }, []); // array faz com que seja carregado 1 unica vez, posso carregar variaveis de estado tb
+
+    console.log("Playlists pronto", playlists);
 
     return (
         <>
@@ -20,7 +46,7 @@ function HomePage() {
                 {/* Prop Drilling */}
                 <Menu valorDoFiltro={valorDoFiltro} setValorDoFiltro={setValorDoFiltro}/>
                 <Header />
-                <TimeLine searchValue={valorDoFiltro} playlists={config.playlists} />
+                <TimeLine searchValue={valorDoFiltro} playlists={playlists} />
             </div>
         </>
         
